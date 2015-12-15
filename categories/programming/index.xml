@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Programming on Chasex&#39;s Blog</title>
-    <link>/categories/programming/</link>
+    <link>http://chasex.github.io/categories/programming/</link>
     <description>Recent content in Programming on Chasex&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Wed, 02 Dec 2015 22:45:43 +0200</lastBuildDate>
-    <atom:link href="/categories/programming/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://chasex.github.io/categories/programming/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Go Receiver的隐式转化</title>
-      <link>/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96</link>
+      <link>http://chasex.github.io/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96</link>
       <pubDate>Wed, 02 Dec 2015 22:45:43 +0200</pubDate>
       
-      <guid>/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96</guid>
+      <guid>http://chasex.github.io/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96</guid>
       <description>&lt;p&gt;最近在读&lt;code&gt;The Go Programming Language&lt;/code&gt;，第6章提到了method receiver的隐式转化。
 这是初学Go比较令人困惑的地方，之前做项目也有犯类似错误，故在此归纳记录一下。&lt;/p&gt;
 

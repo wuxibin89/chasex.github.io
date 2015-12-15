@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Static Sites on Chasex&#39;s Blog</title>
-    <link>/tags/static-sites/</link>
+    <link>http://chasex.github.io/tags/static-sites/</link>
     <description>Recent content in Static Sites on Chasex&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Sat, 10 Oct 2015 16:56:43 +0200</lastBuildDate>
-    <atom:link href="/tags/static-sites/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://chasex.github.io/tags/static-sites/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Introducing Icarus and it&#39;s features</title>
-      <link>/2015/10/10/introducing-icarus-and-its-features</link>
+      <link>http://chasex.github.io/2015/10/10/introducing-icarus-and-its-features</link>
       <pubDate>Sat, 10 Oct 2015 16:56:43 +0200</pubDate>
       
-      <guid>/2015/10/10/introducing-icarus-and-its-features</guid>
+      <guid>http://chasex.github.io/2015/10/10/introducing-icarus-and-its-features</guid>
       <description>
 
 &lt;p&gt;Icarus is a responsive and customizable theme for bloggers. It&amp;rsquo;s a port of the same-named theme for &lt;a href=&#34;//hexo.io&#34;&gt;Hexo&lt;/a&gt; made by &lt;a href=&#34;https://github.com/ppoffice&#34;&gt;Ruipeng Zhang&lt;/a&gt;. Noteworthy features of this Hugo theme are the integration of a comment-system powered by Disqus, localization (l10n) support, syntax highlighting for source code, optional widgets for the sidebar and a handful &lt;a href=&#34;http://gohugo.io/extras/shortcodes/&#34;&gt;shortcodes&lt;/a&gt; to make your life easier.&lt;/p&gt;
@@ -140,16 +140,16 @@ menu = &amp;quot;main&amp;quot;
 &lt;div class=&#34;article-gallery&#34;&gt;
     &lt;div class=&#34;article-gallery-photos&#34;&gt;
         
-        &lt;a class=&#34;article-gallery-img fancybox&#34; href=&#34;/banners/placeholder.png&#34; rel=&#34;group1&#34;&gt;
-            &lt;img src=&#34;/banners/placeholder.png&#34; itemprop=&#34;image&#34;&gt;
+        &lt;a class=&#34;article-gallery-img fancybox&#34; href=&#34;http://chasex.github.io/banners/placeholder.png&#34; rel=&#34;group1&#34;&gt;
+            &lt;img src=&#34;http://chasex.github.io/banners/placeholder.png&#34; itemprop=&#34;image&#34;&gt;
         &lt;/a&gt;
         
-        &lt;a class=&#34;article-gallery-img fancybox&#34; href=&#34;/banners/placeholder.png&#34; rel=&#34;group1&#34;&gt;
-            &lt;img src=&#34;/banners/placeholder.png&#34; itemprop=&#34;image&#34;&gt;
+        &lt;a class=&#34;article-gallery-img fancybox&#34; href=&#34;http://chasex.github.io/banners/placeholder.png&#34; rel=&#34;group1&#34;&gt;
+            &lt;img src=&#34;http://chasex.github.io/banners/placeholder.png&#34; itemprop=&#34;image&#34;&gt;
         &lt;/a&gt;
         
-        &lt;a class=&#34;article-gallery-img fancybox&#34; href=&#34;/banners/placeholder.png&#34; rel=&#34;group1&#34;&gt;
-            &lt;img src=&#34;/banners/placeholder.png&#34; itemprop=&#34;image&#34;&gt;
+        &lt;a class=&#34;article-gallery-img fancybox&#34; href=&#34;http://chasex.github.io/banners/placeholder.png&#34; rel=&#34;group1&#34;&gt;
+            &lt;img src=&#34;http://chasex.github.io/banners/placeholder.png&#34; itemprop=&#34;image&#34;&gt;
         &lt;/a&gt;
         
     &lt;/div&gt;
