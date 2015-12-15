@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Golang on Chasex&#39;s Blog</title>
-    <link>chasex.github.io/tags/golang/</link>
+    <link>/tags/golang/</link>
     <description>Recent content in Golang on Chasex&#39;s Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Tue, 15 Dec 2015 13:50:46 +0200</lastBuildDate>
-    <atom:link href="chasex.github.io/tags/golang/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="/tags/golang/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>这是我的第一篇博客</title>
-      <link>/chasex.github.io/2015/12/15/%E8%BF%99%E6%98%AF%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2</link>
+      <link>/2015/12/15/%E8%BF%99%E6%98%AF%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2</link>
       <pubDate>Tue, 15 Dec 2015 13:50:46 +0200</pubDate>
       
-      <guid>/chasex.github.io/2015/12/15/%E8%BF%99%E6%98%AF%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2</guid>
+      <guid>/2015/12/15/%E8%BF%99%E6%98%AF%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2</guid>
       <description>
 
 &lt;h2 id=&#34;测试:e8fb9c67eba912c72729806db31eaa1b&#34;&gt;测试&lt;/h2&gt;
@@ -67,8 +67,8 @@ int main () {
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;图片
-&lt;img src=&#34;chasex.github.io/banners/placeholder.png&#34; alt=&#34;测试1&#34; /&gt;
-&lt;img src=&#34;chasex.github.io/banners/home-bg.jpg&#34; alt=&#34;测试2&#34; /&gt;&lt;/p&gt;
+&lt;img src=&#34;/banners/placeholder.png&#34; alt=&#34;测试1&#34; /&gt;
+&lt;img src=&#34;/banners/home-bg.jpg&#34; alt=&#34;测试2&#34; /&gt;&lt;/p&gt;
 </description>
     </item>
     
