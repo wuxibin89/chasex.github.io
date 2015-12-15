@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Golang on Chasex&#39;s Blog</title>
+    <link>chasex.github.io/tags/golang/</link>
+    <description>Recent content in Golang on Chasex&#39;s Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 15 Dec 2015 13:50:46 +0200</lastBuildDate>
+    <atom:link href="chasex.github.io/tags/golang/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>这是我的第一篇博客</title>
+      <link>/chasex.github.io/2015/12/15/%E8%BF%99%E6%98%AF%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2</link>
+      <pubDate>Tue, 15 Dec 2015 13:50:46 +0200</pubDate>
+      
+      <guid>/chasex.github.io/2015/12/15/%E8%BF%99%E6%98%AF%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2</guid>
+      <description>
+
+&lt;h2 id=&#34;测试:e8fb9c67eba912c72729806db31eaa1b&#34;&gt;测试&lt;/h2&gt;
+
+&lt;p&gt;代码高亮&lt;/p&gt;
+
+&lt;p&gt;Go&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-C&#34;&gt;import &amp;quot;fmt&amp;quot;
+import &amp;quot;github.com/chasex/test&amp;quot;
+
+func main() {
+    var s string
+    slice := []int{1, 2, 3}
+    for _, i := range slice {
+        fmt.Println(i)    
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;C&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-C&#34;&gt;#include &amp;lt;stdio.h&amp;gt;
+
+int main() {
+    // This is a test program
+    printf(&amp;quot;hello world&amp;quot;);    
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;C++&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-C++&#34;&gt;#include &amp;lt;iostream&amp;gt;
+#include &amp;lt;string&amp;gt;
+
+int main () {
+    std::string str;
+    std::string base=&amp;quot;The quick brown fox jumps over a lazy dog.&amp;quot;;
+
+    // used in the same order as described above:
+
+    str.assign(base);
+    std::cout &amp;lt;&amp;lt; str &amp;lt;&amp;lt; &#39;\n&#39;;
+
+    str.assign(base,10,9);
+    std::cout &amp;lt;&amp;lt; str &amp;lt;&amp;lt; &#39;\n&#39;;         // &amp;quot;brown fox&amp;quot;
+    return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;图片
+&lt;img src=&#34;chasex.github.io/banners/placeholder.png&#34; alt=&#34;测试1&#34; /&gt;
+&lt;img src=&#34;chasex.github.io/banners/home-bg.jpg&#34; alt=&#34;测试2&#34; /&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
