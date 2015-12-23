@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+    <title>浅谈并发模型 &middot; Chasex&#39;s Blog</title>
+    <meta name="generator" content="Hugo 0.16-DEV" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="author" content="Chasex">
+    
+    
+    <link rel="icon" href="http://chasex.github.io/favicon.ico">
+    <link rel="apple-touch-icon" href="http://chasex.github.io/apple-touch-icon.png" />
+    <link rel="stylesheet" href="http://chasex.github.io/css/style.css">
+    <link rel="stylesheet" href="http://chasex.github.io/css/font-awesome.min.css">
+    <link rel="stylesheet" href="http://chasex.github.io/css/monokai.css">
+    <link rel="stylesheet" href="http://chasex.github.io/fancybox/jquery.fancybox.css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,600' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+    <meta property="og:title" content="浅谈并发模型" />
+<meta property="og:description" content="随着网络的发展，互联网在线用户迅猛增长，单台服务器处理的连接数也急剧升高。从1999 年Dan Kegel提出著名的C10K问题，到 2010年WhatsApp单机突破200万连接，短短的20年间服务器并发数提高了200倍。这对服务端 的并发编程提出了更高的要求，那么常见的并发模型有哪些呢？ 进程 进程(Process)是通常是我们接触到的第一种并发模型，它是操作资源分配、调度的最小单位。 进程有程序执行所需的一切资源，包括独立的地址空间、可执行的代码段、打开的文件句柄、 堆、栈等等。 进程并发模型最大的优点就是简单。进程一次只处理一个连接，处理完毕后阻塞等待下一个连接。 进程间采用(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争， 所以不必考虑同步、死锁等问题。而且，一个进程的崩溃不会影响其他进程的执行，可靠性较高。 但是，进程是所有并发模型中效率最低的。我们知道进程调度是抢占式的(preemptive schedule)， 当系统调用阻塞或进程的时间片用完后，调度器将其从CPU移走，选择另一个进程执行。 这中间涉及到上下文切换(context switch)，即将原有进程的所有抽象和资源切换为新进程所属资源。 因此，进程切换的开销主要来自于(1)用户空间与内核空间转化，(2)任务调度器的计算复杂度， (3)进程上下文切换。其中，又以进程上下文切换最为耗时。 通常，一个进程的上下文包括： 通用寄存器、状态寄存器、程序计数器等各种CPU寄存器 内核栈、用户栈 page table, 用于虚拟地址空间和物理地址空间映射 process table，保存进程id，优先级，环境变量等 file table，保存当前进程打开文件的状态信息 在一些架构中，上下文切换甚至包括各种处理器缓存的刷新，这些缓存无法在进程间共享。 比如，x86架构会刷新快表(TLB)，而ARM架构甚至会刷新一级缓存(L1 cache)。 最典型的采用进程模型的服务是Apache，它使用了prefork来减少进程创建的开销。 线程 线程(Thread)是运行在进程内的逻辑流(logical flow)。一个进程内可以有多个并发执行的线程， 这些线程由内核进行自动调度。线程实现在不同系统可能有所不同，例如在Windows和Solaris中， 线程和进程在内核中有不同的数据结构标识，因此调度方式也不同。在Linux系统中，线程与进程 在内核具有一致的数据抽象，使用task_struct标识，由任务调度器CFS进行统一调度。 线程并发模型相对于进程模型来说，上下文切换的开销要小很多。由于共享地址空间，同一个进程 的不同线程切换时，只需切换CPU中的各种寄存器，而不必进行昂贵的地址转换、缓存刷新操作。 寄存器的切换是非常高效的，通常，它的开销与一次内核态、用户态的切换相当。此外，线程间不需要 低效的IPC通信，可以访问共享的地址空间。由于线程独立顺序执行，具有较好的数据局部性(data locality)。 但是，正如Fred Brooks所说的“软件工程没有银弹”，共享地址空间减少线程切换的开销的同时， 也带来了额外的问题。多个线程可能同时操作同一副本，造成数据冲突，从而带来不可预期结果； 或者线程间互相依赖，一个线程阻塞，等待另一个线程的执行结果。前者称为互斥，后者称为同步，为了进行线程间 的互斥和同步，引入了原子操作、锁、条件变量、信号量等机制。要正确使用这些机制不是一件简单 的事，如果使用不当，可能造成死锁，如果滥用，还可能带来性能损失。此外，多线程的调试也不是特别方便。 在现代SMP系统中，多核多CPU的出现，给内核任务调度器带来更大的挑战。若线程跨核心跨物理CPU调度， 会触发所谓的core switch，迁移当前线程的工作状态。 根据Google的一项研究显示，用户态与内核态的切换约为50ns，而一次典型的线程切换约为2.7us。 如果开启CPU Affinity，将每个进程绑定在特定的核心，能降至1us左右，但是这在实际系统中难以操作。 典型的采用线程模型的服务有Apache-MPM、Tomcat。 IO多路复用 IO多路复用(IO Multiplexing)也称为事件驱动(event driven)模型，它将程序执行的逻辑流 刻画为状态机。状态机由当前状态、输入事件，以及事件与状态转化的映射构成。具体来说， 通过select/epoll/kqueue等系统调用同时监听多个句柄，根据每个句柄触发的事件执行 相应的回调函数。这些事件包括可读、可写、出错，句柄可以是网络套接字，也可以是本地管道、文件描述符。 IO多路复用避免了读写阻塞，大幅提升了吞吐率和CPU利用率。除了轮询系统调用，所有的并发控制都是用户空间完成的， 没有上下文切换开销，效率非常高。IO复用运行在单个进程中，多个并发流很容易共享数据， 不需要IPC通信。没有竞态条件(race condition)，也不需要锁、条件变量等同步机制。 IO多路复用的缺点同样很明显。首先，它将原本线性的处理流程变成事件驱动的状态机，一次请求可能有多种中间状态， 每种状态执行不同回调函数。这种异步、非线性的模型，极大地增加了编程难度（如果有兴趣，可以浏览一下Nginx源码，" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B" />
+
+
+<meta property="og:updated_time" content="2015-12-16T21:06:32&#43;08:00"/>
+
+
+
+
+
+
+
+
+
+
+    
+    
+<meta itemprop="name" content="浅谈并发模型">
+<meta itemprop="description" content="随着网络的发展，互联网在线用户迅猛增长，单台服务器处理的连接数也急剧升高。从1999 年Dan Kegel提出著名的C10K问题，到 2010年WhatsApp单机突破200万连接，短短的20年间服务器并发数提高了200倍。这对服务端 的并发编程提出了更高的要求，那么常见的并发模型有哪些呢？ 进程 进程(Process)是通常是我们接触到的第一种并发模型，它是操作资源分配、调度的最小单位。 进程有程序执行所需的一切资源，包括独立的地址空间、可执行的代码段、打开的文件句柄、 堆、栈等等。 进程并发模型最大的优点就是简单。进程一次只处理一个连接，处理完毕后阻塞等待下一个连接。 进程间采用(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争， 所以不必考虑同步、死锁等问题。而且，一个进程的崩溃不会影响其他进程的执行，可靠性较高。 但是，进程是所有并发模型中效率最低的。我们知道进程调度是抢占式的(preemptive schedule)， 当系统调用阻塞或进程的时间片用完后，调度器将其从CPU移走，选择另一个进程执行。 这中间涉及到上下文切换(context switch)，即将原有进程的所有抽象和资源切换为新进程所属资源。 因此，进程切换的开销主要来自于(1)用户空间与内核空间转化，(2)任务调度器的计算复杂度， (3)进程上下文切换。其中，又以进程上下文切换最为耗时。 通常，一个进程的上下文包括： 通用寄存器、状态寄存器、程序计数器等各种CPU寄存器 内核栈、用户栈 page table, 用于虚拟地址空间和物理地址空间映射 process table，保存进程id，优先级，环境变量等 file table，保存当前进程打开文件的状态信息 在一些架构中，上下文切换甚至包括各种处理器缓存的刷新，这些缓存无法在进程间共享。 比如，x86架构会刷新快表(TLB)，而ARM架构甚至会刷新一级缓存(L1 cache)。 最典型的采用进程模型的服务是Apache，它使用了prefork来减少进程创建的开销。 线程 线程(Thread)是运行在进程内的逻辑流(logical flow)。一个进程内可以有多个并发执行的线程， 这些线程由内核进行自动调度。线程实现在不同系统可能有所不同，例如在Windows和Solaris中， 线程和进程在内核中有不同的数据结构标识，因此调度方式也不同。在Linux系统中，线程与进程 在内核具有一致的数据抽象，使用task_struct标识，由任务调度器CFS进行统一调度。 线程并发模型相对于进程模型来说，上下文切换的开销要小很多。由于共享地址空间，同一个进程 的不同线程切换时，只需切换CPU中的各种寄存器，而不必进行昂贵的地址转换、缓存刷新操作。 寄存器的切换是非常高效的，通常，它的开销与一次内核态、用户态的切换相当。此外，线程间不需要 低效的IPC通信，可以访问共享的地址空间。由于线程独立顺序执行，具有较好的数据局部性(data locality)。 但是，正如Fred Brooks所说的“软件工程没有银弹”，共享地址空间减少线程切换的开销的同时， 也带来了额外的问题。多个线程可能同时操作同一副本，造成数据冲突，从而带来不可预期结果； 或者线程间互相依赖，一个线程阻塞，等待另一个线程的执行结果。前者称为互斥，后者称为同步，为了进行线程间 的互斥和同步，引入了原子操作、锁、条件变量、信号量等机制。要正确使用这些机制不是一件简单 的事，如果使用不当，可能造成死锁，如果滥用，还可能带来性能损失。此外，多线程的调试也不是特别方便。 在现代SMP系统中，多核多CPU的出现，给内核任务调度器带来更大的挑战。若线程跨核心跨物理CPU调度， 会触发所谓的core switch，迁移当前线程的工作状态。 根据Google的一项研究显示，用户态与内核态的切换约为50ns，而一次典型的线程切换约为2.7us。 如果开启CPU Affinity，将每个进程绑定在特定的核心，能降至1us左右，但是这在实际系统中难以操作。 典型的采用线程模型的服务有Apache-MPM、Tomcat。 IO多路复用 IO多路复用(IO Multiplexing)也称为事件驱动(event driven)模型，它将程序执行的逻辑流 刻画为状态机。状态机由当前状态、输入事件，以及事件与状态转化的映射构成。具体来说， 通过select/epoll/kqueue等系统调用同时监听多个句柄，根据每个句柄触发的事件执行 相应的回调函数。这些事件包括可读、可写、出错，句柄可以是网络套接字，也可以是本地管道、文件描述符。 IO多路复用避免了读写阻塞，大幅提升了吞吐率和CPU利用率。除了轮询系统调用，所有的并发控制都是用户空间完成的， 没有上下文切换开销，效率非常高。IO复用运行在单个进程中，多个并发流很容易共享数据， 不需要IPC通信。没有竞态条件(race condition)，也不需要锁、条件变量等同步机制。 IO多路复用的缺点同样很明显。首先，它将原本线性的处理流程变成事件驱动的状态机，一次请求可能有多种中间状态， 每种状态执行不同回调函数。这种异步、非线性的模型，极大地增加了编程难度（如果有兴趣，可以浏览一下Nginx源码，">
+
+
+<meta itemprop="dateModified" content="2015-12-16T21:06:32&#43;08:00" />
+<meta itemprop="wordCount" content="110">
+
+
+
+<meta itemprop="keywords" content="programming,go,high-concurrency," />
+
+    
+
+  <meta name="twitter:card" content="summary"/>
+
+
+
+<meta name="twitter:title" content="浅谈并发模型"/>
+<meta name="twitter:description" content="随着网络的发展，互联网在线用户迅猛增长，单台服务器处理的连接数也急剧升高。从1999 年Dan Kegel提出著名的C10K问题，到 2010年WhatsApp单机突破200万连接，短短的20年间服务器并发数提高了200倍。这对服务端 的并发编程提出了更高的要求，那么常见的并发模型有哪些呢？ 进程 进程(Process)是通常是我们接触到的第一种并发模型，它是操作资源分配、调度的最小单位。 进程有程序执行所需的一切资源，包括独立的地址空间、可执行的代码段、打开的文件句柄、 堆、栈等等。 进程并发模型最大的优点就是简单。进程一次只处理一个连接，处理完毕后阻塞等待下一个连接。 进程间采用(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争， 所以不必考虑同步、死锁等问题。而且，一个进程的崩溃不会影响其他进程的执行，可靠性较高。 但是，进程是所有并发模型中效率最低的。我们知道进程调度是抢占式的(preemptive schedule)， 当系统调用阻塞或进程的时间片用完后，调度器将其从CPU移走，选择另一个进程执行。 这中间涉及到上下文切换(context switch)，即将原有进程的所有抽象和资源切换为新进程所属资源。 因此，进程切换的开销主要来自于(1)用户空间与内核空间转化，(2)任务调度器的计算复杂度， (3)进程上下文切换。其中，又以进程上下文切换最为耗时。 通常，一个进程的上下文包括： 通用寄存器、状态寄存器、程序计数器等各种CPU寄存器 内核栈、用户栈 page table, 用于虚拟地址空间和物理地址空间映射 process table，保存进程id，优先级，环境变量等 file table，保存当前进程打开文件的状态信息 在一些架构中，上下文切换甚至包括各种处理器缓存的刷新，这些缓存无法在进程间共享。 比如，x86架构会刷新快表(TLB)，而ARM架构甚至会刷新一级缓存(L1 cache)。 最典型的采用进程模型的服务是Apache，它使用了prefork来减少进程创建的开销。 线程 线程(Thread)是运行在进程内的逻辑流(logical flow)。一个进程内可以有多个并发执行的线程， 这些线程由内核进行自动调度。线程实现在不同系统可能有所不同，例如在Windows和Solaris中， 线程和进程在内核中有不同的数据结构标识，因此调度方式也不同。在Linux系统中，线程与进程 在内核具有一致的数据抽象，使用task_struct标识，由任务调度器CFS进行统一调度。 线程并发模型相对于进程模型来说，上下文切换的开销要小很多。由于共享地址空间，同一个进程 的不同线程切换时，只需切换CPU中的各种寄存器，而不必进行昂贵的地址转换、缓存刷新操作。 寄存器的切换是非常高效的，通常，它的开销与一次内核态、用户态的切换相当。此外，线程间不需要 低效的IPC通信，可以访问共享的地址空间。由于线程独立顺序执行，具有较好的数据局部性(data locality)。 但是，正如Fred Brooks所说的“软件工程没有银弹”，共享地址空间减少线程切换的开销的同时， 也带来了额外的问题。多个线程可能同时操作同一副本，造成数据冲突，从而带来不可预期结果； 或者线程间互相依赖，一个线程阻塞，等待另一个线程的执行结果。前者称为互斥，后者称为同步，为了进行线程间 的互斥和同步，引入了原子操作、锁、条件变量、信号量等机制。要正确使用这些机制不是一件简单 的事，如果使用不当，可能造成死锁，如果滥用，还可能带来性能损失。此外，多线程的调试也不是特别方便。 在现代SMP系统中，多核多CPU的出现，给内核任务调度器带来更大的挑战。若线程跨核心跨物理CPU调度， 会触发所谓的core switch，迁移当前线程的工作状态。 根据Google的一项研究显示，用户态与内核态的切换约为50ns，而一次典型的线程切换约为2.7us。 如果开启CPU Affinity，将每个进程绑定在特定的核心，能降至1us左右，但是这在实际系统中难以操作。 典型的采用线程模型的服务有Apache-MPM、Tomcat。 IO多路复用 IO多路复用(IO Multiplexing)也称为事件驱动(event driven)模型，它将程序执行的逻辑流 刻画为状态机。状态机由当前状态、输入事件，以及事件与状态转化的映射构成。具体来说， 通过select/epoll/kqueue等系统调用同时监听多个句柄，根据每个句柄触发的事件执行 相应的回调函数。这些事件包括可读、可写、出错，句柄可以是网络套接字，也可以是本地管道、文件描述符。 IO多路复用避免了读写阻塞，大幅提升了吞吐率和CPU利用率。除了轮询系统调用，所有的并发控制都是用户空间完成的， 没有上下文切换开销，效率非常高。IO复用运行在单个进程中，多个并发流很容易共享数据， 不需要IPC通信。没有竞态条件(race condition)，也不需要锁、条件变量等同步机制。 IO多路复用的缺点同样很明显。首先，它将原本线性的处理流程变成事件驱动的状态机，一次请求可能有多种中间状态， 每种状态执行不同回调函数。这种异步、非线性的模型，极大地增加了编程难度（如果有兴趣，可以浏览一下Nginx源码，"/>
+
+
+
+</head>
+<body>
+<div class="container">
+
+<header id="header">
+  <div id="header-main" class="header-inner">
+    <div class="outer">
+      <a href="http://chasex.github.io/" id="logo"><i class="logo" style="background-image: url('http://chasex.github.io/css/images/logo.png')"></i><span class="site-title">Chasex&#39;s Blog</span></a>
+      <nav id="main-nav">
+          
+          
+          <a class="main-nav-link" href="http://chasex.github.io/">Home</a>
+          
+          
+          
+          
+          
+          
+
+          
+
+          
+          
+          
+          
+          <a class="main-nav-link" href="http://chasex.github.io/tags/">Tags</a>
+          
+          
+          
+          <a class="main-nav-link" href="http://chasex.github.io/categories/">Categories</a>
+          
+          
+      </nav>
+        <nav id="sub-nav">
+          <div class="profile" id="profile-nav">
+            <a id="profile-anchor" href="javascript:;"><img class="avatar" src="http://chasex.github.io/css/images/avatar.png"><i class="fa fa-caret-down"></i></a>
+          </div>
+        </nav>
+        <div id="search-form-wrap">
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form">
+              <input type="search" name="q" results="0" class="search-form-input" placeholder="Search">
+              <button type="submit" class="search-form-submit">
+              </button>
+              <input type="hidden" name="q" value="site:http://chasex.github.io/">
+         </form>
+        </div>
+    </div>
+  </div>
+  <div id="main-nav-mobile" class="header-sub header-inner">
+    <table class="menu outer">
+      <tbody>
+          <tr>
+          
+          
+          <td><a class="main-nav-link" href="http://chasex.github.io/">Home</a></td>
+          
+          
+          
+          
+          
+          
+
+          
+
+          
+          
+          
+          
+          <td><a class="main-nav-link" href="http://chasex.github.io/tags/">Tags</a></td>
+          
+          
+          
+          <td><a class="main-nav-link" href="http://chasex.github.io/categories/">Categories</a></td>
+          
+          
+          <td>
+          <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form">
+          <input type="search" name="q" results="0" class="search-form-input" placeholder="Search">
+          <input type="hidden" name="q" value="site:http://chasex.github.io/">
+          </form>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</header>
+
+
+<div id="container">
+   <div class="outer">
+    <aside id="profile">
+  <div class="inner profile-inner">
+    <div class="base-info profile-block">
+      <img id="avatar" src="http://chasex.github.io/css/images/avatar.png">
+      <h2 id="name">Chasex</h2>
+      <h3 id="title">Linux Programmer</h3>
+      <span id="location"><i class="fa fa-map-marker"></i>China</span>
+      
+          <a id="follow" href="https://github.com/chasex">
+              Follow
+          </a>
+      
+    </div>
+    <div class="article-info profile-block">
+      <div class="article-info-block">
+        2
+        <span>Posts</span>
+      </div>
+      <div class="article-info-block">
+        2
+        <span>
+            Tags
+        </span>
+      </div>
+    </div>
+    <div class="contact-info profile-block">
+      <table class="contact-list">
+        <tr>
+          
+<td><a href="//github.com/chasex" target="_blank" title="Github"><i class="fa fa-github"></i></a></td>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<td><a href="//facebook.com/wu.xibin.7" target="_blank" title="Facebook"><i class="fa fa-facebook"></i></a></td>
+
+
+
+
+          <td><a href="" target="_blank" title="RSS"><i class="fa fa-rss"></i></a></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</aside>
+
+    <section id="main">
+    <article id="page-undefined" class="article article-type-page" itemscope="" itemprop="blogPost">
+        <div class="article-inner">
+            
+
+            <header class="article-header">
+    <a href="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B">
+    <h1 class="article-title" itemprop="name">
+        浅谈并发模型
+    </h1>
+    </a>
+    <div class="article-meta">
+        <div class="article-date">
+            <i class="fa fa-calendar"></i>
+            <time datetime="2015-12-16 21:06:32 &#43;0800 CST" itemprop="datePublished">2015-12-16</time>
+            &middot;
+            110
+            words
+            &middot;
+            1
+            minute read
+        </div>
+        
+        
+        <div class="article-category">
+            <i class="fa fa-folder"></i>
+            
+            <a class="article-category-link" href="http://chasex.github.io/categories/programming">Programming</a>
+            
+            
+        </div>
+        
+
+        
+        
+        <div class="article-category">
+            <i class="fa fa-tags"></i>
+            
+            <a class="article-category-link" href="http://chasex.github.io/tags/high-concurrency">High Concurrency</a>
+            &middot;
+            
+            <a class="article-category-link" href="http://chasex.github.io/tags/go">Go</a>
+            
+            
+        </div>
+        
+    </div>
+</header>
+
+            <div class="article-entry" itemprop="articleBody">
+                
+
+<p>随着网络的发展，互联网在线用户迅猛增长，单台服务器处理的连接数也急剧升高。从1999
+年Dan Kegel提出著名的<a href="https://en.wikipedia.org/wiki/C10k_problem">C10K</a>问题，到
+2010年WhatsApp单机突破200万连接，短短的20年间服务器并发数提高了200倍。这对服务端
+的并发编程提出了更高的要求，那么常见的并发模型有哪些呢？</p>
+
+<h3 id="进程:a8489f7c1a3fada3714960b0ee39e5cb">进程</h3>
+
+<p>进程(Process)是通常是我们接触到的第一种并发模型，它是操作资源分配、调度的最小单位。
+进程有程序执行所需的一切资源，包括独立的地址空间、可执行的代码段、打开的文件句柄、
+堆、栈等等。</p>
+
+<p>进程并发模型最大的优点就是简单。进程一次只处理一个连接，处理完毕后阻塞等待下一个连接。
+进程间采用(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争，
+所以不必考虑同步、死锁等问题。而且，一个进程的崩溃不会影响其他进程的执行，可靠性较高。</p>
+
+<p>但是，进程是所有并发模型中效率最低的。我们知道进程调度是抢占式的(preemptive schedule)，
+当系统调用阻塞或进程的时间片用完后，调度器将其从CPU移走，选择另一个进程执行。
+这中间涉及到上下文切换(context switch)，即将原有进程的所有抽象和资源切换为新进程所属资源。
+因此，进程切换的开销主要来自于(1)用户空间与内核空间转化，(2)任务调度器的计算复杂度，
+(3)进程上下文切换。其中，又以进程上下文切换最为耗时。</p>
+
+<p>通常，一个进程的上下文包括：</p>
+
+<ul>
+<li>通用寄存器、状态寄存器、程序计数器等各种CPU寄存器</li>
+<li>内核栈、用户栈</li>
+<li>page table, 用于虚拟地址空间和物理地址空间映射</li>
+<li>process table，保存进程id，优先级，环境变量等</li>
+<li>file table，保存当前进程打开文件的状态信息</li>
+</ul>
+
+<p>在一些架构中，上下文切换甚至包括各种处理器缓存的刷新，这些缓存无法在进程间共享。
+比如，x86架构会刷新快表(TLB)，而ARM架构甚至会刷新一级缓存(L1 cache)。</p>
+
+<p>最典型的采用进程模型的服务是Apache，它使用了prefork来减少进程创建的开销。</p>
+
+<h3 id="线程:a8489f7c1a3fada3714960b0ee39e5cb">线程</h3>
+
+<p>线程(Thread)是运行在进程内的逻辑流(logical flow)。一个进程内可以有多个并发执行的线程，
+这些线程由内核进行自动调度。线程实现在不同系统可能有所不同，例如在Windows和Solaris中，
+线程和进程在内核中有不同的数据结构标识，因此调度方式也不同。在Linux系统中，线程与进程
+在内核具有一致的数据抽象，使用task_struct标识，由任务调度器<a href="http://www.ibm.com/developerworks/library/l-completely-fair-scheduler/">CFS</a>进行统一调度。</p>
+
+<p>线程并发模型相对于进程模型来说，上下文切换的开销要小很多。由于共享地址空间，<strong>同一个进程</strong>
+的不同线程切换时，只需切换CPU中的各种寄存器，而不必进行昂贵的地址转换、缓存刷新操作。
+寄存器的切换是非常高效的，通常，它的开销与一次内核态、用户态的切换相当。此外，线程间不需要
+低效的IPC通信，可以访问共享的地址空间。由于线程独立顺序执行，具有较好的数据局部性(data locality)。</p>
+
+<p>但是，正如Fred Brooks所说的“软件工程没有银弹”，共享地址空间减少线程切换的开销的同时，
+也带来了额外的问题。多个线程可能同时操作同一副本，造成数据冲突，从而带来不可预期结果；
+或者线程间互相依赖，一个线程阻塞，等待另一个线程的执行结果。前者称为互斥，后者称为同步，为了进行线程间
+的互斥和同步，引入了原子操作、锁、条件变量、信号量等机制。要正确使用这些机制不是一件简单
+的事，如果使用不当，可能造成死锁，如果滥用，还可能带来性能损失。此外，多线程的调试也不是特别方便。</p>
+
+<p>在现代SMP系统中，多核多CPU的出现，给内核任务调度器带来更大的挑战。若线程跨核心跨物理CPU调度，
+会触发所谓的<a href="https://cseweb.ucsd.edu/~rstrong/publications/osr09preprint.pdf">core switch</a>，迁移当前线程的工作状态。
+根据Google的一项<a href="https://www.youtube.com/watch?v=KXuZi9aeGTw">研究显示</a>，用户态与内核态的切换约为50ns，而一次典型的线程切换约为2.7us。
+如果开启CPU Affinity，将每个进程绑定在特定的核心，能降至1us左右，但是这在实际系统中难以操作。</p>
+
+<p>典型的采用线程模型的服务有Apache-MPM、Tomcat。</p>
+
+<h3 id="io多路复用:a8489f7c1a3fada3714960b0ee39e5cb">IO多路复用</h3>
+
+<p>IO多路复用(IO Multiplexing)也称为事件驱动(event driven)模型，它将程序执行的逻辑流
+刻画为状态机。状态机由当前状态、输入事件，以及事件与状态转化的映射构成。具体来说，
+通过select/epoll/kqueue等系统调用同时监听多个句柄，根据每个句柄触发的事件执行
+相应的回调函数。这些事件包括可读、可写、出错，句柄可以是网络套接字，也可以是本地管道、文件描述符。</p>
+
+<p>IO多路复用避免了读写阻塞，大幅提升了吞吐率和CPU利用率。除了轮询系统调用，所有的并发控制都是用户空间完成的，
+没有上下文切换开销，效率非常高。IO复用运行在单个进程中，多个并发流很容易共享数据，
+不需要IPC通信。没有竞态条件(race condition)，也不需要锁、条件变量等同步机制。</p>
+
+<p>IO多路复用的缺点同样很明显。首先，它将原本线性的处理流程变成事件驱动的状态机，一次请求可能有多种中间状态，
+每种状态执行不同回调函数。这种异步、非线性的模型，极大地增加了编程难度（如果有兴趣，可以浏览一下<a href="http://nginx.org/en/download.html">Nginx</a>源码，
+那满屏的回调函数一定会令你印象深刻）。即使现在有框架的帮助，如libevent，libev，libuv等，
+有经验的程序员也必须小心翼翼才能不犯错。其次，由于单进程执行，IO复用无法充分发挥多核CPU的优势，所有并发都是串行执行的。
+在CPU普遍16、20核的今天，这显然令人无法接受。由于串行执行，在回调中任何阻塞操作都将显著影响性能，最好是将这些操作也异步执行。
+但是，在使用一些封装好的客户端，如zookeeper client，redis client时，很难将其注册到epoll等轮询调用中。</p>
+
+<p>典型的采用IO复用模型的服务有Nginx，Redis，Tornado等。</p>
+
+<h3 id="协程:a8489f7c1a3fada3714960b0ee39e5cb">协程</h3>
+
+<p>协程(Coroutine)也称为用户态线程(User-Space Thread)，是一种协同的、非抢占式的多任务并发模型。
+协程运行在用户空间，当遇到阻塞或特定入口时，通过显式调用切换方法主动让出CPU，由任务调度器选取另一个协程执行。
+通常，协程切换只是简单地改变执行函数栈，不涉及内核态与用户态转化，也涉及上下文切换，开销远小于进程/线程切换。</p>
+
+<p>协程的使用没有前三个并发模型那么广泛，一方面是因为是它缺少系统、语言层面的支持，如C/C++/Java并不支持原生的协程。
+另一方面，是因为协程比较晦涩，不如进程、线程、IO复用等并发模型直观。其实，协程的历史很早，1958年Melvin Conway
+第一次在汇编语言引入协程。之后，从上世纪六七十年代的Simula、Modula-2、Scheme，到我们熟知的Python、Ruby、C#等，
+都有协程的身影。近几年，典型的支持协程的语言有Lua、Go、Rust、Scala等，下面以Go为例简要介绍一下协程并发模型。</p>
+
+<p>在Go中，协程被称为goroutine，它与线程的第一个区别是其创建的开销非常小。操作系统为每个创建的线程
+分配一个固定大小的栈(一般为2MB)，栈上存储所有挂起或正在执行的函数及其局部变量。2MB的栈空间对于简单的任务
+来说显得太浪费，而对于一些复杂的任务（如深度嵌套的递归）来说又显得太小。因此，goroutine的栈采取了动态扩容方式，
+初始时仅为2KB，随着任务执行按需增长，最大可达1GB。此外，GC还会周期性地将不再使用的内存回收，收缩栈空间。
+通常，Go程序可以同时并发成百上千个协程，这都得益于它高效的内存模型。</p>
+
+<p>goroutine与线程的第二个区别是其调度的开销非常小。前面我们说过，线程切换是由内核调度器执行的，涉及到用户态/内核态的转化、上线文切换，
+而Go有自己的runtime调度器，负责goroutine调度。Go调度器不是由硬件时钟中断周期性触发，而是在程序执行的特殊点发生。这些点包括：</p>
+
+<ul>
+<li>系统调用阻塞，如磁盘、网络IO</li>
+<li>新的goroutine被创建</li>
+<li>通道(channel)发送、接收阻塞</li>
+<li>GC执行周期结束</li>
+</ul>
+
+<p>goroutine在运行过程中遇到这些点时，会主动让出CPU，由调度器选择另一个执行（通常，只是简单地交换栈指针）。
+由于调度器工作在用户空间，没有用户态/内核态转化、上下文切换，所以goroutine切换的开销比线程小很多。</p>
+
+<p>此外，为了充分发挥多核性能，Go采用了M:N的调度模型，即M个协程工作在N个线程上。调度器负责将协程分配给某个线程执行，并尽量保证并行执行。
+当一个线程没有可执行协程时，调度器会从全局的协程队列分配。当全局队列也没有时，调度器甚至会从其他线程&rdquo;偷&rdquo;一些过来(Work-Stealing)。</p>
+
+<p>典型的采用协程模型的服务有openresty(Lua), gevent(Python), http server(Go)。</p>
+
+<h3 id="总结:a8489f7c1a3fada3714960b0ee39e5cb">总结</h3>
+
+<p>以上总结了目前4种常用的并发模型，它们在工作原理、运行效率、编程难度等方面有显著区别，各自有适用场景，在实际使用时应该根据需求仔细评估。
+通常，在大型系统构建过程中，不会只用到某种单一的并发模型，而是两种甚至是三种联合工作。例如，Apache-MPM是多进程加线程池的模型，Nginx是多进程加IO
+复用的模型，某些半同步半异步(Half-sync/Half-async)的服务是IO复用加线程池的模型，而协程调度器底层实现也离不开线程、IO复用的支持。</p>
+
+            </div>
+            <footer class="article-footer">
+    <a data-url="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B" data-id="a8489f7c1a3fada3714960b0ee39e5cb" class="article-share-link">
+        Share
+    </a>
+    
+    <a href="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B/#disqus_thread" class="article-comment-link">
+        Comments
+    </a>
+    
+</footer>
+
+        </div>
+
+        
+<nav id="article-nav">
+    
+    <a href="http://chasex.github.io/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">
+          Older
+      </strong>
+      <div class="article-nav-title">Go Receiver的隐式转化</div>
+    </a>
+    
+
+    
+</nav>
+
+
+    </article>
+    <section id="comments">
+        <div id="disqus_thread">
+            <div id="disqus_thread"></div>
+<script type="text/javascript">
+    var disqus_shortname = 'chasex';
+    var disqus_identifier = 'http:\/\/chasex.github.io\/2015\/12\/16\/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B';
+    var disqus_title = '浅谈并发模型';
+    var disqus_url = 'http:\/\/chasex.github.io\/2015\/12\/16\/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B';
+
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+        </div>
+    </section>
+
+</section>
+
+    <aside id="sidebar">
+    
+<div class="widget-wrap">
+    <h3 class="widget-title">
+        Recents
+    </h3>
+    <div class="widget">
+        <ul id="recent-post">
+            
+            <li>
+                <div class="item-thumbnail">
+                    <a href="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B" class="thumbnail">
+                    
+                        <span style="background-image:url(http://chasex.github.io/)" alt="浅谈并发模型" class="thumbnail-image"></span>
+                    
+                    </a>
+                </div>
+                <div class="item-inner">
+                    
+                    <p class="item-category">
+                        <a class="article-category-link" href="http://chasex.github.io/categories/programming">
+                        Programming
+                        </a>
+                    </p>
+                    
+                    <p class="item-title"><a href="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B" class="title">浅谈并发模型</a></p>
+                    <p class="item-date">
+                        <time datetime="2015-12-16 21:06:32 &#43;0800 CST" itemprop="datePublished">2015-12-16</time>
+                    </p>
+                </div>
+            </li>
+            
+            <li>
+                <div class="item-thumbnail">
+                    <a href="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B" class="thumbnail">
+                    
+                        <span style="background-image:url(http://chasex.github.io/)" alt="浅谈并发模型" class="thumbnail-image"></span>
+                    
+                    </a>
+                </div>
+                <div class="item-inner">
+                    
+                    <p class="item-category">
+                        <a class="article-category-link" href="http://chasex.github.io/categories/programming">
+                        Programming
+                        </a>
+                    </p>
+                    
+                    <p class="item-title"><a href="http://chasex.github.io/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96" class="title">Go Receiver的隐式转化</a></p>
+                    <p class="item-date">
+                        <time datetime="2015-12-02 22:45:43 &#43;0200 &#43;0200" itemprop="datePublished">2015-12-02</time>
+                    </p>
+                </div>
+            </li>
+            
+        </ul>
+    </div>
+</div>
+
+
+    
+
+<div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+        <ul class="category-list">
+            
+            <li class="category-list-item">
+                <a class="category-list-link" href="http://chasex.github.io/categories/programming">
+                    programming
+                </a>
+                <span class="category-list-count">2</span>
+            </li>
+            
+        </ul>
+    </div>
+</div>
+
+
+
+    
+
+<div class="widget-wrap">
+    <h3 class="widget-title">
+        Tags
+    </h3>
+    <div class="widget">
+        <ul class="category-list">
+            
+            <li class="category-list-item">
+                <a class="category-list-link" href="http://chasex.github.io/tags/go">
+                    go
+                </a>
+                <span class="category-list-count">2</span>
+            </li>
+            
+            <li class="category-list-item">
+                <a class="category-list-link" href="http://chasex.github.io/tags/high-concurrency">
+                    high-concurrency
+                </a>
+                <span class="category-list-count">1</span>
+            </li>
+            
+        </ul>
+    </div>
+</div>
+
+
+
+    
+
+
+    <div id="toTop" class="fa fa-chevron-up"></div>
+</aside>
+
+</div>
+</div>
+
+<footer id="footer">
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2015<br>
+      Powered by <a href="//gohugo.io">Hugo</a>. Theme by <a href="http://github.com/ppoffice">PPOffice</a>.
+    </div>
+  </div>
+</footer>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="http://chasex.github.io/fancybox/jquery.fancybox.pack.js"></script>
+<script src="http://chasex.github.io/js/script.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.8.0/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<!-- MathJax -->
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']]}
+  });
+</script>
+<script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+</body>
+</html>
