@@ -29,7 +29,7 @@
 堆、栈等等。&lt;/p&gt;
 
 &lt;p&gt;进程并发模型最大的优点就是简单。进程一次只处理一个连接，处理完毕后阻塞等待下一个连接。
-进程间采用(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争，
+进程间通过(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争，
 所以不必考虑同步、死锁等问题。而且，一个进程的崩溃不会影响其他进程的执行，可靠性较高。&lt;/p&gt;
 
 &lt;p&gt;但是，进程是所有并发模型中效率最低的。我们知道进程调度是抢占式的(preemptive schedule)，
@@ -215,9 +215,6 @@ func main() {
 
     m2.String()
     m2.Set(&amp;quot;new message&amp;quot;)
-
-    fmt.Println(m1)
-    fmt.Println(m2)
 
     var _ Interface = m1    // compile error
     var _ Interface = m2

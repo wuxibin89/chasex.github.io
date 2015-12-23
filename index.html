@@ -263,7 +263,7 @@
         <div class="article-category">
             <i class="fa fa-tags"></i>
             
-            <a class="article-category-link" href="http://chasex.github.io/tags/high-concurrency">High Concurrency</a>
+            <a class="article-category-link" href="http://chasex.github.io/tags/concurrency">Concurrency</a>
             &middot;
             
             <a class="article-category-link" href="http://chasex.github.io/tags/go">Go</a>
@@ -276,7 +276,7 @@
 
             <div class="article-entry" itemprop="articleBody">
                 <p>
-                    随着网络的发展，互联网在线用户迅猛增长，单台服务器处理的连接数也急剧升高。从1999 年Dan Kegel提出著名的C10K问题，到 2010年WhatsApp单机突破200万连接，短短的20年间服务器并发数提高了200倍。这对服务端 的并发编程提出了更高的要求，那么常见的并发模型有哪些呢？ 进程 进程(Process)是通常是我们接触到的第一种并发模型，它是操作资源分配、调度的最小单位。 进程有程序执行所需的一切资源，包括独立的地址空间、可执行的代码段、打开的文件句柄、 堆、栈等等。 进程并发模型最大的优点就是简单。进程一次只处理一个连接，处理完毕后阻塞等待下一个连接。 进程间采用(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争， 所以不必考虑同步、死锁等问题。而且，一个进程的崩溃不会影响其他进程的执行，可靠性较高。 但是，进程是所有并发模型中效率最低的。我们知道进程调度是抢占式的(preemptive schedule)， 当系统调用阻塞或进程的时间片用完后，调度器将其从CPU移走，选择另一个进程执行。 这中间涉及到上下文切换(context switch)，即将原有进程的所有抽象和资源切换为新进程所属资源。 因此，进程切换的开销主要来自于(1)用户空间与内核空间转化，(2)任务调度器的计算复杂度， (3)进程上下文切换。其中，又以进程上下文切换最为耗时。 通常，一个进程的上下文包括： 通用寄存器、状态寄存器、程序计数器等各种CPU寄存器 内核栈、用户栈 page table, 用于虚拟地址空间和物理地址空间映射 process table，保存进程id，优先级，环境变量等 file table，保存当前进程打开文件的状态信息 在一些架构中，上下文切换甚至包括各种处理器缓存的刷新，这些缓存无法在进程间共享。 比如，x86架构会刷新快表(TLB)，而ARM架构甚至会刷新一级缓存(L1 cache)。 最典型的采用进程模型的服务是Apache，它使用了prefork来减少进程创建的开销。 线程 线程(Thread)是运行在进程内的逻辑流(logical flow)。一个进程内可以有多个并发执行的线程， 这些线程由内核进行自动调度。线程实现在不同系统可能有所不同，例如在Windows和Solaris中， 线程和进程在内核中有不同的数据结构标识，因此调度方式也不同。在Linux系统中，线程与进程 在内核具有一致的数据抽象，使用task_struct标识，由任务调度器CFS进行统一调度。 线程并发模型相对于进程模型来说，上下文切换的开销要小很多。由于共享地址空间，同一个进程 的不同线程切换时，只需切换CPU中的各种寄存器，而不必进行昂贵的地址转换、缓存刷新操作。 寄存器的切换是非常高效的，通常，它的开销与一次内核态、用户态的切换相当。此外，线程间不需要 低效的IPC通信，可以访问共享的地址空间。由于线程独立顺序执行，具有较好的数据局部性(data locality)。 但是，正如Fred Brooks所说的“软件工程没有银弹”，共享地址空间减少线程切换的开销的同时， 也带来了额外的问题。多个线程可能同时操作同一副本，造成数据冲突，从而带来不可预期结果； 或者线程间互相依赖，一个线程阻塞，等待另一个线程的执行结果。前者称为互斥，后者称为同步，为了进行线程间 的互斥和同步，引入了原子操作、锁、条件变量、信号量等机制。要正确使用这些机制不是一件简单 的事，如果使用不当，可能造成死锁，如果滥用，还可能带来性能损失。此外，多线程的调试也不是特别方便。 在现代SMP系统中，多核多CPU的出现，给内核任务调度器带来更大的挑战。若线程跨核心跨物理CPU调度， 会触发所谓的core switch，迁移当前线程的工作状态。 根据Google的一项研究显示，用户态与内核态的切换约为50ns，而一次典型的线程切换约为2.7us。 如果开启CPU Affinity，将每个进程绑定在特定的核心，能降至1us左右，但是这在实际系统中难以操作。 典型的采用线程模型的服务有Apache-MPM、Tomcat。 IO多路复用 IO多路复用(IO Multiplexing)也称为事件驱动(event driven)模型，它将程序执行的逻辑流 刻画为状态机。状态机由当前状态、输入事件，以及事件与状态转化的映射构成。具体来说， 通过select/epoll/kqueue等系统调用同时监听多个句柄，根据每个句柄触发的事件执行 相应的回调函数。这些事件包括可读、可写、出错，句柄可以是网络套接字，也可以是本地管道、文件描述符。 IO多路复用避免了读写阻塞，大幅提升了吞吐率和CPU利用率。除了轮询系统调用，所有的并发控制都是用户空间完成的， 没有上下文切换开销，效率非常高。IO复用运行在单个进程中，多个并发流很容易共享数据， 不需要IPC通信。没有竞态条件(race condition)，也不需要锁、条件变量等同步机制。 IO多路复用的缺点同样很明显。首先，它将原本线性的处理流程变成事件驱动的状态机，一次请求可能有多种中间状态， 每种状态执行不同回调函数。这种异步、非线性的模型，极大地增加了编程难度（如果有兴趣，可以浏览一下Nginx源码，
+                    随着网络的发展，互联网在线用户迅猛增长，单台服务器处理的连接数也急剧升高。从1999 年Dan Kegel提出著名的C10K问题，到 2010年WhatsApp单机突破200万连接，短短的20年间服务器并发数提高了200倍。这对服务端 的并发编程提出了更高的要求，那么常见的并发模型有哪些呢？ 进程 进程(Process)是通常是我们接触到的第一种并发模型，它是操作资源分配、调度的最小单位。 进程有程序执行所需的一切资源，包括独立的地址空间、可执行的代码段、打开的文件句柄、 堆、栈等等。 进程并发模型最大的优点就是简单。进程一次只处理一个连接，处理完毕后阻塞等待下一个连接。 进程间通过(有名)管道，消息队列，共享内存、UNIX域套接字等IPC通信。由于进程地址空间独立，不存在资源竞争， 所以不必考虑同步、死锁等问题。而且，一个进程的崩溃不会影响其他进程的执行，可靠性较高。 但是，进程是所有并发模型中效率最低的。我们知道进程调度是抢占式的(preemptive schedule)， 当系统调用阻塞或进程的时间片用完后，调度器将其从CPU移走，选择另一个进程执行。 这中间涉及到上下文切换(context switch)，即将原有进程的所有抽象和资源切换为新进程所属资源。 因此，进程切换的开销主要来自于(1)用户空间与内核空间转化，(2)任务调度器的计算复杂度， (3)进程上下文切换。其中，又以进程上下文切换最为耗时。 通常，一个进程的上下文包括： 通用寄存器、状态寄存器、程序计数器等各种CPU寄存器 内核栈、用户栈 page table, 用于虚拟地址空间和物理地址空间映射 process table，保存进程id，优先级，环境变量等 file table，保存当前进程打开文件的状态信息 在一些架构中，上下文切换甚至包括各种处理器缓存的刷新，这些缓存无法在进程间共享。 比如，x86架构会刷新快表(TLB)，而ARM架构甚至会刷新一级缓存(L1 cache)。 最典型的采用进程模型的服务是Apache，它使用了prefork来减少进程创建的开销。 线程 线程(Thread)是运行在进程内的逻辑流(logical flow)。一个进程内可以有多个并发执行的线程， 这些线程由内核进行自动调度。线程实现在不同系统可能有所不同，例如在Windows和Solaris中， 线程和进程在内核中有不同的数据结构标识，因此调度方式也不同。在Linux系统中，线程与进程 在内核具有一致的数据抽象，使用task_struct标识，由任务调度器CFS进行统一调度。 线程并发模型相对于进程模型来说，上下文切换的开销要小很多。由于共享地址空间，同一个进程 的不同线程切换时，只需切换CPU中的各种寄存器，而不必进行昂贵的地址转换、缓存刷新操作。 寄存器的切换是非常高效的，通常，它的开销与一次内核态、用户态的切换相当。此外，线程间不需要 低效的IPC通信，可以访问共享的地址空间。由于线程独立顺序执行，具有较好的数据局部性(data locality)。 但是，正如Fred Brooks所说的“软件工程没有银弹”，共享地址空间减少线程切换的开销的同时， 也带来了额外的问题。多个线程可能同时操作同一副本，造成数据冲突，从而带来不可预期结果； 或者线程间互相依赖，一个线程阻塞，等待另一个线程的执行结果。前者称为互斥，后者称为同步，为了进行线程间 的互斥和同步，引入了原子操作、锁、条件变量、信号量等机制。要正确使用这些机制不是一件简单 的事，如果使用不当，可能造成死锁，如果滥用，还可能带来性能损失。此外，多线程的调试也不是特别方便。 在现代SMP系统中，多核多CPU的出现，给内核任务调度器带来更大的挑战。若线程跨核心跨物理CPU调度， 会触发所谓的core switch，迁移当前线程的工作状态。 根据Google的一项研究显示，用户态与内核态的切换约为50ns，而一次典型的线程切换约为2.7us。 如果开启CPU Affinity，将每个进程绑定在特定的核心，能降至1us左右，但是这在实际系统中难以操作。 典型的采用线程模型的服务有Apache-MPM、Tomcat。 IO多路复用 IO多路复用(IO Multiplexing)也称为事件驱动(event driven)模型，它将程序执行的逻辑流 刻画为状态机。状态机由当前状态、输入事件，以及事件与状态转化的映射构成。具体来说， 通过select/epoll/kqueue等系统调用同时监听多个句柄，根据每个句柄触发的事件执行 相应的回调函数。这些事件包括可读、可写、出错，句柄可以是网络套接字，也可以是本地管道、文件描述符。 IO多路复用避免了读写阻塞，大幅提升了吞吐率和CPU利用率。除了轮询系统调用，所有的并发控制都是用户空间完成的， 没有上下文切换开销，效率非常高。IO复用运行在单个进程中，多个并发流很容易共享数据， 不需要IPC通信。没有竞态条件(race condition)，也不需要锁、条件变量等同步机制。 IO多路复用的缺点同样很明显。首先，它将原本线性的处理流程变成事件驱动的状态机，一次请求可能有多种中间状态， 每种状态执行不同回调函数。这种异步、非线性的模型，极大地增加了编程难度（如果有兴趣，可以浏览一下Nginx源码，
                     <br>
                 </p>
                 <p class="article-more-link">
@@ -315,7 +315,7 @@
             <i class="fa fa-calendar"></i>
             <time datetime="2015-12-02 22:45:43 &#43;0200 &#43;0200" itemprop="datePublished">2015-12-02</time>
             &middot;
-            157
+            155
             words
             &middot;
             1
@@ -389,7 +389,7 @@
             
             <li>
                 <div class="item-thumbnail">
-                    <a href="http://chasex.github.io/" class="thumbnail">
+                    <a href="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B" class="thumbnail">
                     
                         <span style="background-image:url(http://chasex.github.io/)" alt="Chasex&#39;s Blog" class="thumbnail-image"></span>
                     
@@ -412,7 +412,7 @@
             
             <li>
                 <div class="item-thumbnail">
-                    <a href="http://chasex.github.io/" class="thumbnail">
+                    <a href="http://chasex.github.io/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96" class="thumbnail">
                     
                         <span style="background-image:url(http://chasex.github.io/)" alt="Chasex&#39;s Blog" class="thumbnail-image"></span>
                     
@@ -468,17 +468,17 @@
         <ul class="category-list">
             
             <li class="category-list-item">
+                <a class="category-list-link" href="http://chasex.github.io/tags/concurrency">
+                    concurrency
+                </a>
+                <span class="category-list-count">1</span>
+            </li>
+            
+            <li class="category-list-item">
                 <a class="category-list-link" href="http://chasex.github.io/tags/go">
                     go
                 </a>
                 <span class="category-list-count">2</span>
-            </li>
-            
-            <li class="category-list-item">
-                <a class="category-list-link" href="http://chasex.github.io/tags/high-concurrency">
-                    high-concurrency
-                </a>
-                <span class="category-list-count">1</span>
             </li>
             
         </ul>
