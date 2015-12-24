@@ -17,7 +17,9 @@
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,400,600' rel='stylesheet' type='text/css'>
     <link href='https://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
     <meta property="og:title" content="Go Receiver的隐式转化" />
-<meta property="og:description" content="最近在读The Go Programming Language，第6章提到了method receiver的隐式转化。 这是初学Go比较令人困惑的地方，之前做项目也有犯类似错误，故在此归纳记录一下。 在Go中method的receiver要么是自定义类型，要么是指向自定义类型的指针。 type Point struct { X, Y float64 } func (p Point) Distance() float64 { return math.Hypot(p.X, p.Y) } func (p *Point) Scale(factor float64) { p.X *= factor p.Y *= factor } Go允许T类型的变量调用receiver为*T的方法，编译器隐式地对变量做了取地址操作。 同样地，也允许*T类型的变量调用receiver为T的方法，编译器隐式地对指针做了解引用操作。 这是一个很好用的语法糖，使得我们在编码时不用做显式类型转化。 但是要注意，对于临时变量，由于无法获取地址，Go不会做隐式的转化。 func main() { p := Point{3, 4} p.Distance() p.Scale(2) // implicit (&amp;p) fmt.Println(p) // {6, 8} q := &amp;Point{3, 4} q.Distance() // implicit (*q) q.Scale(2) fmt.Println(q) // &amp;{6," />
+<meta property="og:description" content="最近在读The Go Programming Language，第6章提到了method receiver的隐式转化。
+这是初学Go比较令人困惑的地方，之前做项目也有犯类似错误，故在此归纳记录一下。
+" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="http://chasex.github.io/2015/12/02/go-receiver%E7%9A%84%E9%9A%90%E5%BC%8F%E8%BD%AC%E5%8C%96" />
 
@@ -36,7 +38,9 @@
     
     
 <meta itemprop="name" content="Go Receiver的隐式转化">
-<meta itemprop="description" content="最近在读The Go Programming Language，第6章提到了method receiver的隐式转化。 这是初学Go比较令人困惑的地方，之前做项目也有犯类似错误，故在此归纳记录一下。 在Go中method的receiver要么是自定义类型，要么是指向自定义类型的指针。 type Point struct { X, Y float64 } func (p Point) Distance() float64 { return math.Hypot(p.X, p.Y) } func (p *Point) Scale(factor float64) { p.X *= factor p.Y *= factor } Go允许T类型的变量调用receiver为*T的方法，编译器隐式地对变量做了取地址操作。 同样地，也允许*T类型的变量调用receiver为T的方法，编译器隐式地对指针做了解引用操作。 这是一个很好用的语法糖，使得我们在编码时不用做显式类型转化。 但是要注意，对于临时变量，由于无法获取地址，Go不会做隐式的转化。 func main() { p := Point{3, 4} p.Distance() p.Scale(2) // implicit (&amp;p) fmt.Println(p) // {6, 8} q := &amp;Point{3, 4} q.Distance() // implicit (*q) q.Scale(2) fmt.Println(q) // &amp;{6,">
+<meta itemprop="description" content="最近在读The Go Programming Language，第6章提到了method receiver的隐式转化。
+这是初学Go比较令人困惑的地方，之前做项目也有犯类似错误，故在此归纳记录一下。
+">
 
 
 <meta itemprop="dateModified" content="2015-12-02T22:45:43&#43;02:00" />
@@ -53,7 +57,9 @@
 
 
 <meta name="twitter:title" content="Go Receiver的隐式转化"/>
-<meta name="twitter:description" content="最近在读The Go Programming Language，第6章提到了method receiver的隐式转化。 这是初学Go比较令人困惑的地方，之前做项目也有犯类似错误，故在此归纳记录一下。 在Go中method的receiver要么是自定义类型，要么是指向自定义类型的指针。 type Point struct { X, Y float64 } func (p Point) Distance() float64 { return math.Hypot(p.X, p.Y) } func (p *Point) Scale(factor float64) { p.X *= factor p.Y *= factor } Go允许T类型的变量调用receiver为*T的方法，编译器隐式地对变量做了取地址操作。 同样地，也允许*T类型的变量调用receiver为T的方法，编译器隐式地对指针做了解引用操作。 这是一个很好用的语法糖，使得我们在编码时不用做显式类型转化。 但是要注意，对于临时变量，由于无法获取地址，Go不会做隐式的转化。 func main() { p := Point{3, 4} p.Distance() p.Scale(2) // implicit (&amp;p) fmt.Println(p) // {6, 8} q := &amp;Point{3, 4} q.Distance() // implicit (*q) q.Scale(2) fmt.Println(q) // &amp;{6,"/>
+<meta name="twitter:description" content="最近在读The Go Programming Language，第6章提到了method receiver的隐式转化。
+这是初学Go比较令人困惑的地方，之前做项目也有犯类似错误，故在此归纳记录一下。
+"/>
 
 
 
@@ -82,11 +88,11 @@
           
           
           
-          <a class="main-nav-link" href="http://chasex.github.io/tags/">Tags</a>
+          <a class="main-nav-link" href="http://chasex.github.io/tags/">Tag</a>
           
           
           
-          <a class="main-nav-link" href="http://chasex.github.io/categories/">Categories</a>
+          <a class="main-nav-link" href="http://chasex.github.io/categories/">Category</a>
           
           
       </nav>
@@ -125,11 +131,11 @@
           
           
           
-          <td><a class="main-nav-link" href="http://chasex.github.io/tags/">Tags</a></td>
+          <td><a class="main-nav-link" href="http://chasex.github.io/tags/">Tag</a></td>
           
           
           
-          <td><a class="main-nav-link" href="http://chasex.github.io/categories/">Categories</a></td>
+          <td><a class="main-nav-link" href="http://chasex.github.io/categories/">Category</a></td>
           
           
           <td>
@@ -423,7 +429,7 @@ Interface接口。</p>
     
 <div class="widget-wrap">
     <h3 class="widget-title">
-        Recents
+        Recent Posts
     </h3>
     <div class="widget">
         <ul id="recent-post">
@@ -432,7 +438,7 @@ Interface接口。</p>
                 <div class="item-thumbnail">
                     <a href="http://chasex.github.io/2015/12/16/%E6%B5%85%E8%B0%88%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%9E%8B" class="thumbnail">
                     
-                        <span style="background-image:url(http://chasex.github.io/)" alt="Go Receiver的隐式转化" class="thumbnail-image"></span>
+                        <span style="background-image:url(http://chasex.github.io/)" alt="浅谈并发模型" class="thumbnail-image"></span>
                     
                     </a>
                 </div>
@@ -482,7 +488,7 @@ Interface接口。</p>
     
 
 <div class="widget-wrap">
-    <h3 class="widget-title">Categories</h3>
+    <h3 class="widget-title">Category</h3>
     <div class="widget">
         <ul class="category-list">
             
@@ -503,7 +509,7 @@ Interface接口。</p>
 
 <div class="widget-wrap">
     <h3 class="widget-title">
-        Tags
+        Tag
     </h3>
     <div class="widget">
         <ul class="category-list">
