@@ -1384,8 +1384,8 @@ ol.toc {
   margin-right: 10px;
 }
 .archive-article-thumbnail .thumbnail {
-  width: 160px;
-  height: 90px;
+  width: 150px;
+  height: 100px;
   display: block;
   position: relative;
   overflow: hidden;
@@ -1953,8 +1953,8 @@ pre .javascript .function {
   transition: all 0.2s ease;
 }
 #recent-post li .item-thumbnail .thumbnail {
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 60px;
   display: block;
   position: relative;
   overflow: hidden;
